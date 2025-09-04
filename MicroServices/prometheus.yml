@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'ciudad-microservicios'
+    static_configs:
+      - targets: ['localhost:80']
+  
+  - job_name: 'users-service'
+    static_configs:
+      - targets: ['user-service:3000']
+  
+  - job_name: 'products-service'
+    static_configs:
+      - targets: ['product-service:3000']
+  
+  - job_name: 'orders-service'
+    static_configs:
+      - targets: ['order-service:3000']
+  
+  - job_name: 'notifications-service'
+    static_configs:
+      - targets: ['notification-service:3000']

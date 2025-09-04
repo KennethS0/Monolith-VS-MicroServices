@@ -1,0 +1,37 @@
+services:
+  # El castillo completo en un solo lugar
+  lamp:
+    image: php:8.1-apache
+    ports:
+      - "8080:80"
+    volumes:
+      - ./www:/var/www/html
+    depends_on:
+      - mysql
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_DATABASE=mi_castillo
+      - MYSQL_USER=rey
+      - MYSQL_PASSWORD=password_secreto
+    command: >
+      bash -c "
+      apt-get update && 
+      apt-get install -y default-mysql-client &&
+      docker-php-ext-install pdo pdo_mysql &&
+      apache2-foreground
+      "
+
+  # La bodega del castillo (base de datos)
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password_root
+      MYSQL_DATABASE: mi_castillo
+      MYSQL_USER: rey
+      MYSQL_PASSWORD: password_secreto
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  mysql_data:

@@ -1,0 +1,133 @@
+# microservicios-ciudad.yml - La ciudad del futuro
+networks:
+  ciudad-network:
+    driver: bridge
+
+services:
+  # 🚪 API Gateway - El portero de la ciudad
+  api-gateway:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./gateway-config.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+      - notification-service
+    networks:
+      - ciudad-network
+
+  # 👤 Servicio de Usuarios - El registro civil
+  user-service:
+    build: ./services/users
+    expose:
+      - "3000"
+    environment:
+      - SERVICE_NAME=users
+      - DATABASE_URL=postgresql://user:password@user-db:5432/users_db
+    depends_on:
+      - user-db
+    networks:
+      - ciudad-network
+
+  # 📦 Servicio de Productos - El almacén
+  product-service:
+    build: ./services/products
+    expose:
+      - "3000"
+    environment:
+      - SERVICE_NAME=products
+      - DATABASE_URL=postgresql://user:password@product-db:5432/products_db
+    depends_on:
+      - product-db
+    networks:
+      - ciudad-network
+
+  # 🛒 Servicio de Pedidos - La oficina de pedidos
+  order-service:
+    build: ./services/orders
+    expose:
+      - "3000"
+    environment:
+      - SERVICE_NAME=orders
+      - DATABASE_URL=postgresql://user:password@order-db:5432/orders_db
+      - USER_SERVICE_URL=http://user-service:3000
+      - PRODUCT_SERVICE_URL=http://product-service:3000
+    depends_on:
+      - order-db
+    networks:
+      - ciudad-network
+
+  # 📧 Servicio de Notificaciones - La oficina postal
+  notification-service:
+    build: ./services/notifications
+    expose:
+      - "3000"
+    environment:
+      - SERVICE_NAME=notifications
+      - REDIS_URL=redis://shared-cache:6379
+    depends_on:
+      - shared-cache
+    networks:
+      - ciudad-network
+
+  # 🗄️ Bases de datos especializadas
+  user-db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: users_db
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    networks:
+      - ciudad-network
+
+  product-db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: products_db
+    volumes:
+      - product_db_data:/var/lib/postgresql/data
+    networks:
+      - ciudad-network
+
+  order-db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: orders_db
+    volumes:
+      - order_db_data:/var/lib/postgresql/data
+    networks:
+      - ciudad-network
+
+  # ⚡ Cache compartido - La biblioteca pública
+  shared-cache:
+    image: redis:alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - cache_data:/data
+    networks:
+      - ciudad-network
+
+  # 📊 Monitor de la Ciudad - El observatorio
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - ciudad-network
+
+volumes:
+  user_db_data:
+  product_db_data:
+  order_db_data:
+  cache_data:
